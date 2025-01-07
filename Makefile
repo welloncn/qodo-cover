@@ -1,5 +1,6 @@
 # Makefile
 SITE_PACKAGES=$(shell python3 -c "import wandb, os; print(os.path.dirname(wandb.__file__))")
+DIFF_COVER_TEMPLATES=$(shell python -c "import diff_cover, os; print(os.path.join(os.path.dirname(diff_cover.__file__), 'templates'))")
 TOML_FILES=$(shell find cover_agent/settings -name "*.toml" | sed 's/.*/-\-add-data "&:."/' | tr '\n' ' ')
 
 .PHONY: test build installer
@@ -23,6 +24,7 @@ installer:
 		$(TOML_FILES) \
 		--add-data "$(SITE_PACKAGES)/vendor:wandb/vendor" \
 		--add-data "build_helpers/anthropic_tokenizer.json:litellm/litellm_core_utils/tokenizers" \
+		--add-data "$(DIFF_COVER_TEMPLATES):diff_cover/templates" \
 		--hidden-import=tiktoken_ext.openai_public \
 		--hidden-import=tiktoken_ext \
 		--hidden-import=wandb \
@@ -31,3 +33,4 @@ installer:
 		--onefile \
 		--name cover-agent \
 		cover_agent/main.py
+
