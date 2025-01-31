@@ -5,12 +5,9 @@ import logging
 import os
 import re
 
-from cover_agent.AICaller import AICaller
-from cover_agent.CoverageProcessor import CoverageProcessor
 from cover_agent.CustomLogger import CustomLogger
 from cover_agent.FilePreprocessor import FilePreprocessor
-from cover_agent.PromptBuilder import PromptBuilder
-from cover_agent.Runner import Runner
+from cover_agent.AgentCompletionABC import AgentCompletionABC
 from cover_agent.settings.config_loader import get_settings
 from cover_agent.settings.token_handling import clip_tokens, TokenEncoder
 from cover_agent.utils import load_yaml
@@ -24,7 +21,7 @@ class UnitTestGenerator:
         code_coverage_report_path: str,
         test_command: str,
         llm_model: str,
-        api_base: str = "",
+        agent_completion: AgentCompletionABC,
         test_command_dir: str = os.getcwd(),
         included_files: list = None,
         coverage_type="cobertura",
@@ -41,6 +38,7 @@ class UnitTestGenerator:
             code_coverage_report_path (str): The path to the code coverage report file.
             test_command (str): The command to run tests.
             llm_model (str): The language model to be used for test generation.
+            agent_completion (AgentCompletionABC): The agent completion object to be used for test generation.
             api_base (str, optional): The base API url to use in case model is set to Ollama or Hugging Face. Defaults to an empty string.
             test_command_dir (str, optional): The directory where the test command should be executed. Defaults to the current working directory.
             included_files (list, optional): A list of paths to included files. Defaults to None.
@@ -68,9 +66,7 @@ class UnitTestGenerator:
         self.use_report_coverage_feature_flag = use_report_coverage_feature_flag
         self.last_coverage_percentages = {}
         self.llm_model = llm_model
-
-        # Objects to instantiate
-        self.ai_caller = AICaller(model=llm_model, api_base=api_base)
+        self.agent_completion = agent_completion
 
         # Get the logger instance from CustomLogger
         self.logger = CustomLogger.get_logger(__name__)
@@ -85,16 +81,6 @@ class UnitTestGenerator:
         # Read self.source_file_path into a string
         with open(self.source_file_path, "r") as f:
             self.source_code = f.read()
-
-    # def build_prompt(self, failed_test_runs):
-    #     """
-    #     Run code coverage and build the prompt to be used for generating tests.
-
-    #     Returns:
-    #         None
-    #     """
-    #     # Run coverage and build the prompt
-    #     self.prompt = self.build_prompt(failed_test_runs=failed_test_runs)
 
     def get_code_language(self, source_file_path):
         """
@@ -161,18 +147,16 @@ class UnitTestGenerator:
             return out_str
         return ""
 
-    def build_prompt(self, failed_test_runs, language, testing_framework, code_coverage_report) -> dict:
+    def check_for_failed_test_runs(self, failed_test_runs):
         """
-        Builds a prompt using the provided information to be used for generating tests.
+        Processes the failed test runs and returns a formatted string with details of the failed tests.
 
-        This method checks for the existence of failed test runs and then calls the PromptBuilder class to construct the prompt.
-        The prompt includes details such as the source file path, test file path, code coverage report, included files,
-        additional instructions, failed test runs, and the programming language being used.
+        Args:
+            failed_test_runs (list): A list of dictionaries containing information about failed test runs.
 
         Returns:
-            str: The generated prompt to be used for test generation.
+            str: A formatted string with details of the failed tests.
         """
-        # Check for existence of failed tests:
         if not failed_test_runs:
             failed_test_runs_value = ""
         else:
@@ -196,20 +180,7 @@ class UnitTestGenerator:
                 self.logger.error(f"Error processing failed test runs: {e}")
                 failed_test_runs_value = ""
 
-        # Call PromptBuilder to build the prompt
-        self.prompt_builder = PromptBuilder(
-            source_file_path=self.source_file_path,
-            test_file_path=self.test_file_path,
-            code_coverage_report=code_coverage_report,
-            included_files=self.included_files,
-            additional_instructions=self.additional_instructions,
-            failed_test_runs=failed_test_runs_value,
-            language=language,
-            testing_framework=testing_framework,
-            project_root=self.project_root,
-        )
-
-        return self.prompt_builder.build_prompt()
+        return failed_test_runs_value
 
     def generate_tests(self, failed_test_runs, language, testing_framework, code_coverage_report):
         """
@@ -229,8 +200,10 @@ class UnitTestGenerator:
         Raises:
             Exception: If there is an error during test generation, such as a parsing error while processing the AI model response.
         """
-        self.prompt = self.build_prompt(failed_test_runs, language, testing_framework, code_coverage_report)
-        response, prompt_token_count, response_token_count =  self.ai_caller.call_model(prompt=self.prompt)
+        failed_test_runs_value = self.check_for_failed_test_runs(failed_test_runs)
+        response, prompt_token_count, response_token_count, self.prompt = self.agent_completion.generate_tests(
+            failed_test_runs_value, language, testing_framework, code_coverage_report
+        )
 
         self.total_input_token_count += prompt_token_count
         self.total_output_token_count += response_token_count
