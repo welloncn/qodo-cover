@@ -47,7 +47,7 @@ class CoverAgent:
                 source_file_path=args.source_file_path,
                 test_file_path=args.test_file_output_path,
                 code_coverage_report="",
-                included_files=args.included_files,
+                included_files=UnitTestGenerator.get_included_files(args.included_files, args.project_root),
                 additional_instructions=args.additional_instructions,
                 failed_test_runs="",
                 language="",
