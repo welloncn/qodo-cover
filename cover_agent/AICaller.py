@@ -45,13 +45,13 @@ class AICaller:
         self.enable_retry = enable_retry
 
     @conditional_retry  # You can access self.enable_retry here
-    def call_model(self, prompt: dict, max_tokens=4096, stream=True):
+    def call_model(self, prompt: dict, max_tokens=16384, stream=True):
         """
         Call the language model with the provided prompt and retrieve the response.
 
         Parameters:
             prompt (dict): The prompt to be sent to the language model.
-            max_tokens (int, optional): The maximum number of tokens to generate in the response. Defaults to 4096.
+            max_tokens (int, optional): The maximum number of tokens to generate in the response. Defaults to 16384.
             stream (bool, optional): Whether to stream the response or not. Defaults to True.
 
         Returns:
@@ -92,7 +92,8 @@ class AICaller:
             stream = False  # o1 doesn't support streaming
             completion_params["temperature"] = 1
             completion_params["stream"] = False  # o1 doesn't support streaming
-            completion_params["max_completion_tokens"] = max_tokens
+            completion_params["max_completion_tokens"] = 2*max_tokens
+            # completion_params["reasoning_effort"] = "high"
             completion_params.pop("max_tokens", None)  # Remove 'max_tokens' if present
 
         # API base exception for OpenAI Compatible, Ollama, and Hugging Face models
