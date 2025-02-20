@@ -7,7 +7,6 @@ import wandb
 from typing import List
 
 from cover_agent.CustomLogger import CustomLogger
-from cover_agent.PromptBuilder import PromptBuilder, adapt_test_command_for_a_single_test_via_ai
 from cover_agent.UnitTestGenerator import UnitTestGenerator
 from cover_agent.UnitTestValidator import UnitTestValidator
 from cover_agent.UnitTestDB import UnitTestDB
@@ -41,12 +40,9 @@ class CoverAgent:
         if agent_completion:
             self.agent_completion = agent_completion
         else:
-            # Default to using the DefaultAgentCompletion object with the PromptBuilder and AICaller
+            # Default to using the DefaultAgentCompletion object with AICaller
             self.ai_caller = AICaller(model=args.model, api_base=args.api_base, max_tokens=8192)
-            self.prompt_builder = PromptBuilder()
-            self.agent_completion = DefaultAgentCompletion(
-                builder=self.prompt_builder, caller=self.ai_caller
-            )
+            self.agent_completion = DefaultAgentCompletion(caller=self.ai_caller)
 
         self.test_gen = UnitTestGenerator(
             source_file_path=args.source_file_path,
@@ -99,8 +95,10 @@ class CoverAgent:
                         f"Failed to adapt test command for running a single test: {test_command}"
                     )
             else:
-                new_command_line = adapt_test_command_for_a_single_test_via_ai(
-                    args, test_file_relative_path, test_command
+                new_command_line = self.agent_completion.adapt_test_command_for_a_single_test_via_ai(
+                    test_file_relative_path=test_file_relative_path, 
+                    test_command=test_command,
+                    project_root_dir=self.args.test_command_dir, 
                 )
         if new_command_line:
             args.test_command_original = test_command
@@ -227,7 +225,7 @@ class CoverAgent:
                     test_result = self.test_validator.validate_test(generated_test)
 
                     # Insert the test result into the database
-                    test_result["prompt"] = self.test_gen.prompt["user"]
+                    test_result["prompt"] = self.test_gen.prompt
                     self.test_db.insert_attempt(test_result)
             except AttributeError as e:
                 self.logger.error(

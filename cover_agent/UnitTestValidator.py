@@ -403,35 +403,45 @@ class UnitTestValidator:
             test_code_indented = "\n" + test_code_indented.strip("\n") + "\n"
             exit_code = 0
             if test_code_indented and relevant_line_number_to_insert_tests_after:
-                # Step 1: Insert the generated test to the relevant line in the test file
-                additional_imports_lines = ""
+                # Step 1: Insert imports first, then insert the generated test code
+                additional_imports_lines = []
                 original_content_lines = original_content.split("\n")
-                test_code_lines = test_code_indented.split("\n")
-                # insert the test code at the relevant line
-                processed_test_lines = (
-                    original_content_lines[:relevant_line_number_to_insert_tests_after]
-                    + test_code_lines
-                    + original_content_lines[
-                        relevant_line_number_to_insert_tests_after:
-                    ]
-                )
-                # insert the additional imports at line 'relevant_line_number_to_insert_imports_after'
-                processed_test = "\n".join(processed_test_lines)
+
+                # Build a deduplicated list of import lines
+                if additional_imports:
+                    raw_import_lines = additional_imports.split("\n")
+                    for line in raw_import_lines:
+                        # Only add if it's not already present (stripped match) in the file
+                        if line.strip() and all(
+                            line.strip() != existing.strip()
+                            for existing in original_content_lines
+                        ):
+                            additional_imports_lines.append(line)
+
+                inserted_lines_count = 0
                 if (
                     relevant_line_number_to_insert_imports_after
-                    and additional_imports
-                    and additional_imports not in processed_test
+                    and additional_imports_lines
                 ):
-                    additional_imports_lines = additional_imports.split("\n")
-                    processed_test_lines = (
-                        processed_test_lines[
-                            :relevant_line_number_to_insert_imports_after
-                        ]
+                    inserted_lines_count = len(additional_imports_lines)
+                    original_content_lines = (
+                        original_content_lines[:relevant_line_number_to_insert_imports_after]
                         + additional_imports_lines
-                        + processed_test_lines[
-                            relevant_line_number_to_insert_imports_after:
-                        ]
+                        + original_content_lines[relevant_line_number_to_insert_imports_after:]
                     )
+
+                # Offset the test insertion point by however many lines we just inserted
+                updated_test_insertion_point = relevant_line_number_to_insert_tests_after
+                if inserted_lines_count > 0:
+                    updated_test_insertion_point += inserted_lines_count
+
+                # Now insert the test code at 'updated_test_insertion_point'
+                test_code_lines = test_code_indented.split("\n")
+                processed_test_lines = (
+                    original_content_lines[:updated_test_insertion_point]
+                    + test_code_lines
+                    + original_content_lines[updated_test_insertion_point:]
+                )
                 processed_test = "\n".join(processed_test_lines)
                 with open(self.test_file_path, "w") as test_file:
                     test_file.write(processed_test)
@@ -636,20 +646,18 @@ class UnitTestValidator:
 
     def extract_error_message(self, fail_details):
         """
-        Extracts the error message from the provided stderr and stdout outputs.
+        Extracts the error message from the provided fail details.
 
-        Updates the PromptBuilder object with the stderr and stdout, builds a custom prompt for analyzing test run failures,
-        calls the language model to analyze the prompt, and loads the response into a dictionary.
-
-        Returns the error summary from the loaded YAML data or a default error message if unable to summarize.
+        Uses the agent completion to analyze test run failures by examining the source file,
+        processed test file, stderr, and stdout. Returns a summarized error message from the analysis.
         Logs errors encountered during the process.
 
         Parameters:
-            stderr (str): The standard error output from the test run.
-            stdout (str): The standard output from the test run.
+            fail_details (dict): Dictionary containing test failure details including stderr, stdout,
+                               and processed test file contents.
 
         Returns:
-            str: The error summary extracted from the response or a default error message if extraction fails.
+            str: The error summary extracted from the response or an empty string if extraction fails.
         """
         try:
             # Run the analysis via LLM
