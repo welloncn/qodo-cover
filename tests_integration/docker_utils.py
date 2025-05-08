@@ -10,10 +10,14 @@ from docker.errors import APIError, BuildError, DockerException
 from docker.models.containers import Container
 from rich.progress import Progress, TextColumn
 
+from cover_agent import constants
 from cover_agent.CustomLogger import CustomLogger
+from cover_agent.utils import truncate_hash
 
 
 logger = CustomLogger.get_logger(__name__)
+
+HASH_DISPLAY_LENGTH = constants.DOCKER_HASH_DISPLAY_LENGTH
 
 
 class DockerUtilityError(Exception):
@@ -194,6 +198,38 @@ def pull_and_tag_docker_image(client: docker.DockerClient, docker_image: str, im
         raise DockerUtilityError("Image tagging failed: image not found") from e
 
 
+def get_docker_image_workdir(client: docker.DockerClient, image_tag: str) -> str:
+    """
+    Get the WORKDIR of a Docker image.
+
+    Args:
+        client (docker.DockerClient): Docker client instance.
+        image_tag (str): Tag of the Docker image to inspect.
+
+    Returns:
+        str: The WORKDIR of the image. Defaults to "/" if not set.
+
+    Raises:
+        DockerUtilityError: If the image inspection fails.
+    """
+    try:
+        image = client.images.get(image_tag)
+        workdir = image.attrs.get("Config", {}).get("WorkingDir", "/")
+        logger.info(f"Working directory for image {image_tag}: {workdir}")
+
+        return workdir
+    except docker.errors.ImageNotFound as e:
+        logger.error(f"Docker image {image_tag} not found")
+        raise DockerUtilityError(f"Failed to inspect Docker image {image_tag}") from e
+    except docker.errors.APIError as e:
+        logger.error(f"Docker API error while inspecting image {image_tag}: {e}")
+        raise DockerUtilityError(f"Failed to inspect Docker image {image_tag}") from e
+    except AttributeError as e:
+        msg = f"Docker image attribute error for {image_tag}"
+        logger.error(f"{msg}: {e}")
+        raise DockerUtilityError(msg) from e
+
+
 def run_docker_container(
         client: docker.DockerClient,
         image: str,
@@ -248,10 +284,9 @@ def run_docker_container(
         )
 
         container_info = {
-            "Started container": container.id,
+            "Started container ID": truncate_hash(container.id, HASH_DISPLAY_LENGTH),
             "Container image": container.attrs.get("Config", {}).get("Image"),
             "Container name": container.attrs.get("Name")[1:],
-            "Container ID": container.attrs.get("Id"),
             "Container created at": container.attrs.get("Created"),
             "Cmd": container.attrs.get("Config", {}).get("Cmd"),
         }
@@ -379,10 +414,10 @@ def clean_up_docker_container(container: Container) -> None:
         clean_up_docker_container(container=my_container, force_remove=True)
     """
     logger.info("Cleaning up...")
-    logger.info(f"Stop the Docker container {container.id}...")
+    logger.info(f"Stop the Docker container {truncate_hash(container.id, HASH_DISPLAY_LENGTH)}.")
     container.stop()
 
-    logger.info(f"Remove the Docker container {container.id}...")
+    logger.info(f"Remove the Docker container {truncate_hash(container.id, HASH_DISPLAY_LENGTH)}.")
     container.remove()
 
 
@@ -555,3 +590,21 @@ def log_multiple_lines(lines: dict[str, Any]) -> None:
     """
     for label, value in lines.items():
         logger.info(f"{label}: {value}")
+
+
+def get_short_docker_image_name(image_name: str) -> str:
+    """
+    Extracts the short name of a Docker image from its full name.
+
+    This function takes a Docker image name (which may include a repository path and a tag)
+    and returns only the short name of the image (the last part of the repository path).
+
+    Args:
+        image_name (str): The full name of the Docker image, including the repository path
+                          and optionally a tag (e.g., "repository/path/image:tag").
+
+    Returns:
+        str: The short name of the Docker image (e.g., "image").
+    """
+    repository = image_name.split(":")[0]  # Remove the tag if present
+    return repository.split("/")[-1]  # Extract the last part of the repository path
