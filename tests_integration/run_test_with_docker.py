@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import docker
+
 from dotenv import load_dotenv
 from dynaconf import Dynaconf
 
@@ -45,6 +46,7 @@ def run_test(test_args: argparse.Namespace) -> None:
     """
     logger.info("=========== Running test with Docker and these args ================")
     log_test_args(test_args)
+    logger.info("====================================================================")
 
     client = docker.from_env()
     container = None
@@ -230,10 +232,7 @@ def compose_container_volumes(test_args: argparse.Namespace) -> dict:
     volumes = {}
     if test_args.log_db_path:
         log_db_name = os.path.basename(test_args.log_db_path)
-        volumes[test_args.log_db_path] = {
-            "bind": f"/{log_db_name}",
-            "mode": "rw"
-        }
+        volumes[test_args.log_db_path] = {"bind": f"/{log_db_name}", "mode": "rw"}
     return volumes
 
 
@@ -255,14 +254,22 @@ def compose_test_command(test_args: argparse.Namespace) -> list:
     """
     command = [
         "/usr/local/bin/cover-agent",
-        "--source-file-path", test_args.source_file_path,
-        "--test-file-path", test_args.test_file_path,
-        "--code-coverage-report-path", test_args.code_coverage_report_path,
-        "--test-command", test_args.test_command,
-        "--coverage-type", test_args.coverage_type,
-        "--desired-coverage", str(test_args.desired_coverage),
-        "--max-iterations", str(test_args.max_iterations),
-        "--max-run-time-sec", str(test_args.max_run_time_sec),
+        "--source-file-path",
+        test_args.source_file_path,
+        "--test-file-path",
+        test_args.test_file_path,
+        "--code-coverage-report-path",
+        test_args.code_coverage_report_path,
+        "--test-command",
+        test_args.test_command,
+        "--coverage-type",
+        test_args.coverage_type,
+        "--desired-coverage",
+        str(test_args.desired_coverage),
+        "--max-iterations",
+        str(test_args.max_iterations),
+        "--max-run-time-sec",
+        str(test_args.max_run_time_sec),
         "--strict-coverage",
     ]
 
@@ -281,12 +288,12 @@ def compose_test_command(test_args: argparse.Namespace) -> list:
 
     if test_args.suppress_log_files:
         command.extend(["--suppress-log-files"])
-        logger.info('Suppressed all generated log files for this test run.')
+        logger.info("Suppressed all generated log files for this test run.")
 
     return command
 
 
-def log_test_args(test_args: argparse.Namespace, max_value_len=60) -> None:
+def log_test_args(test_args: argparse.Namespace, max_value_len=65) -> None:
     """
     Logs the test arguments, excluding sensitive information.
 
@@ -310,7 +317,7 @@ def log_test_args(test_args: argparse.Namespace, max_value_len=60) -> None:
         value_str = str(value)
         if len(value_str) > max_value_len:
             value_str = f"{value_str[:max_value_len]}..."
-        logger.info(f"{key:30}: {value_str}")
+        logger.info(f"{key:35}: {value_str}")
 
 
 def parse_extra_args(settings: Dynaconf) -> argparse.Namespace:

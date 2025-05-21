@@ -17,6 +17,7 @@ class CoverageType(Enum):
         COBERTURA: Represents the Cobertura coverage report format.
         JACOCO: Represents the JaCoCo coverage report format.
     """
+
     LCOV = "lcov"
     COBERTURA = "cobertura"
     JACOCO = "jacoco"
@@ -57,6 +58,7 @@ class CoverAgentConfig:
         record_mode (bool): Enable LLM responses record mode for tests.
         test_command_original (str): Original test command before any modifications.
     """
+
     source_file_path: str
     test_file_path: str
     project_root: str
@@ -82,6 +84,9 @@ class CoverAgentConfig:
     run_each_test_separately: bool
     record_mode: bool
     suppress_log_files: bool
+    max_test_files_allowed_to_analyze: int
+    look_for_oldest_unchanged_test_file: bool
+    project_language: str
     test_command_original: Optional[str] = None
 
     @classmethod
@@ -122,6 +127,9 @@ class CoverAgentConfig:
             run_each_test_separately=args.run_each_test_separately,
             record_mode=args.record_mode,
             suppress_log_files=args.suppress_log_files,
+            max_test_files_allowed_to_analyze=args.max_test_files_allowed_to_analyze,
+            look_for_oldest_unchanged_test_file=args.look_for_oldest_unchanged_test_file,
+            project_language=args.project_language,
         )
 
     @classmethod
@@ -165,6 +173,9 @@ class CoverAgentConfig:
             "run_each_test_separately": default_config.get("run_each_test_separately"),
             "record_mode": default_config.get("record_mode"),
             "suppress_log_files": default_config.get("suppress_log_files"),
+            "max_test_files_allowed_to_analyze": default_config.get("max_test_files_allowed_to_analyze"),
+            "look_for_oldest_unchanged_test_file": default_config.get("look_for_oldest_unchanged_test_file"),
+            "project_language": default_config.get("project_language"),
         }
 
         # CLI overrides default settings
