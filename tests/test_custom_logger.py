@@ -1,18 +1,21 @@
 import logging
 
-import pytest
-
 from unittest.mock import patch
 
-from cover_agent.CustomLogger import CustomLogger
+import pytest
+
+from cover_agent.custom_logger import CustomLogger
 
 
 class TestCustomLogger:
 
-    @pytest.mark.parametrize("generate_log_files,should_exist", [
-        (True, True),
-        (False, False),
-    ])
+    @pytest.mark.parametrize(
+        "generate_log_files,should_exist",
+        [
+            (True, True),
+            (False, False),
+        ],
+    )
     def test_logger_file_creation(self, generate_log_files, should_exist):
         """
         Test that log files are only created when generate_log_files=True.

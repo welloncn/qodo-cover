@@ -1,9 +1,13 @@
 import argparse
+
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+
+from sqlalchemy import Column, DateTime, Integer, String, Text, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session, load_only
-from cover_agent.ReportGenerator import ReportGenerator
+from sqlalchemy.orm import load_only, scoped_session, sessionmaker
+
+from cover_agent.report_generator import ReportGenerator
+
 
 Base = declarative_base()
 
@@ -95,9 +99,7 @@ class UnitTestDB:
         ReportGenerator.generate_report(self.get_all_attempts(), report_filepath)
 
 
-def dump_to_report(
-    path_to_db="cover_agent_unit_test_runs.db", report_filepath="test_results.html"
-):
+def dump_to_report(path_to_db="cover_agent_unit_test_runs.db", report_filepath="test_results.html"):
     unittest_db = UnitTestDB(f"sqlite:///{path_to_db}")
     unittest_db.dump_to_report(report_filepath)
 

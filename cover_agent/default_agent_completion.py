@@ -1,11 +1,12 @@
-from cover_agent.AgentCompletionABC import AgentCompletionABC
-from cover_agent.AICaller import AICaller
-from cover_agent.CustomLogger import CustomLogger
-from cover_agent.settings.config_loader import get_settings
-from cover_agent.utils import load_yaml
+from typing import Optional, Tuple
 
 from jinja2 import Environment, StrictUndefined
-from typing import Optional, Tuple
+
+from cover_agent.agent_completion_abc import AgentCompletionABC
+from cover_agent.ai_caller import AICaller
+from cover_agent.custom_logger import CustomLogger
+from cover_agent.settings.config_loader import get_settings
+from cover_agent.utils import load_yaml
 
 
 class DefaultAgentCompletion(AgentCompletionABC):
@@ -16,7 +17,7 @@ class DefaultAgentCompletion(AgentCompletionABC):
     to get the response.
     """
 
-    def __init__(self, caller: AICaller, logger: Optional[CustomLogger]=None, generate_log_files: bool=True):
+    def __init__(self, caller: AICaller, logger: Optional[CustomLogger] = None, generate_log_files: bool = True):
         """
         Initializes the DefaultAgentCompletion.
 
@@ -49,11 +50,7 @@ class DefaultAgentCompletion(AgentCompletionABC):
         try:
             # 1. Fetch the prompt config from your TOML-based settings
             settings = get_settings().get(file)
-            if (
-                not settings
-                or not hasattr(settings, "system")
-                or not hasattr(settings, "user")
-            ):
+            if not settings or not hasattr(settings, "system") or not hasattr(settings, "user"):
                 msg = f"Could not find valid system/user prompt settings for: {file}"
                 self.logger.error(msg)
                 raise ValueError(msg)
@@ -335,8 +332,6 @@ class DefaultAgentCompletion(AgentCompletionABC):
             if "new_command_line" in response_yaml:
                 new_command_line = response_yaml["new_command_line"].strip()
         except Exception as e:
-            self.logger.error(
-                f"Failed parsing YAML for adapt_test_command. response_yaml: {response_str}. Error: {e}"
-            )
+            self.logger.error(f"Failed parsing YAML for adapt_test_command. response_yaml: {response_str}. Error: {e}")
 
         return new_command_line, prompt_tokens, completion_tokens, prompt["user"]

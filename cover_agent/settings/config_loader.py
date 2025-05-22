@@ -1,5 +1,7 @@
 import sys
-from os.path import dirname, abspath, join, exists
+
+from os.path import abspath, dirname, exists, join
+
 from dynaconf import Dynaconf
 
 
@@ -52,9 +54,7 @@ class SingletonSettings:
                 if not exists(file_path):
                     raise FileNotFoundError(f"Settings file not found: {file_path}")
 
-            self.settings = Dynaconf(
-                envvar_prefix=False, merge_enabled=True, settings_files=settings_files
-            )
+            self.settings = Dynaconf(envvar_prefix=False, merge_enabled=True, settings_files=settings_files)
 
 
 def get_settings() -> Dynaconf:

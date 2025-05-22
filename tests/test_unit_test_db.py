@@ -1,9 +1,9 @@
-import pytest
 import os
-from datetime import datetime, timedelta
-from cover_agent.UnitTestDB import dump_to_report_cli
-from cover_agent.UnitTestDB import dump_to_report
-from cover_agent.UnitTestDB import UnitTestDB, UnitTestGenerationAttempt
+
+import pytest
+
+from cover_agent.unit_test_db import UnitTestDB, UnitTestGenerationAttempt, dump_to_report, dump_to_report_cli
+
 
 DB_NAME = "unit_test_runs.db"
 DATABASE_URL = f"sqlite:///{DB_NAME}"
@@ -59,9 +59,7 @@ class TestUnitTestDB:
         # Insert the test result into the database
         attempt_id = unit_test_db.insert_attempt(test_result)
         with unit_test_db.Session() as session:
-            attempt = (
-                session.query(UnitTestGenerationAttempt).filter_by(id=attempt_id).one()
-            )
+            attempt = session.query(UnitTestGenerationAttempt).filter_by(id=attempt_id).one()
 
         # Assertions to verify the inserted attempt
         assert attempt.id == attempt_id

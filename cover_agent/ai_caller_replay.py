@@ -2,7 +2,7 @@ import time
 
 from typing import Optional
 
-from cover_agent.CustomLogger import CustomLogger
+from cover_agent.custom_logger import CustomLogger
 from cover_agent.record_replay_manager import RecordReplayManager
 from cover_agent.utils import get_original_caller
 
@@ -11,12 +11,12 @@ class AICallerReplay:
     """A class that only handles replaying recorded LLM responses."""
 
     def __init__(
-            self,
-            source_file: str,
-            test_file: str,
-            record_replay_manager: Optional[RecordReplayManager]=None,
-            logger: Optional[CustomLogger]=None,
-            generate_log_files: bool=True,
+        self,
+        source_file: str,
+        test_file: str,
+        record_replay_manager: Optional[RecordReplayManager] = None,
+        logger: Optional[CustomLogger] = None,
+        generate_log_files: bool = True,
     ):
         self.source_file = source_file
         self.test_file = test_file

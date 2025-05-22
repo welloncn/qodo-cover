@@ -1,11 +1,12 @@
 import argparse
 import os
-import pytest
 import tempfile
 
 from unittest.mock import MagicMock, mock_open, patch
 
-from cover_agent.CoverAgent import CoverAgent
+import pytest
+
+from cover_agent.cover_agent import CoverAgent
 from cover_agent.main import parse_args
 from cover_agent.settings.config_schema import CoverAgentConfig
 
@@ -14,6 +15,7 @@ class TestCoverAgent:
     """
     Test suite for the CoverAgent class.
     """
+
     @staticmethod
     def create_config_from_args(args: argparse.Namespace) -> CoverAgentConfig:
         """Helper function to create CoverAgentConfig from argparse.Namespace"""
@@ -115,8 +117,8 @@ class TestCoverAgent:
             assert args.max_iterations == 10
             assert args.suppress_log_files is True
 
-    @patch("cover_agent.CoverAgent.UnitTestGenerator")
-    @patch("cover_agent.CoverAgent.os.path.isfile")
+    @patch("cover_agent.cover_agent.UnitTestGenerator")
+    @patch("cover_agent.cover_agent.os.path.isfile")
     def test_agent_source_file_not_found(self, mock_isfile, mock_unit_cover_agent):
         """
         Test the behavior when the test file is not found.
@@ -153,17 +155,15 @@ class TestCoverAgent:
                 agent = CoverAgent(config)
 
         # Assert that the correct error message is raised
-        assert (
-            str(exc_info.value) == f"Source file not found at {args.source_file_path}"
-        )
+        assert str(exc_info.value) == f"Source file not found at {args.source_file_path}"
 
         mock_unit_cover_agent.assert_not_called()
 
         assert args.suppress_log_files is False
 
-    @patch("cover_agent.CoverAgent.os.path.exists")
-    @patch("cover_agent.CoverAgent.os.path.isfile")
-    @patch("cover_agent.CoverAgent.UnitTestGenerator")
+    @patch("cover_agent.cover_agent.os.path.exists")
+    @patch("cover_agent.cover_agent.os.path.isfile")
+    @patch("cover_agent.cover_agent.UnitTestGenerator")
     def test_agent_test_file_not_found(self, mock_unit_cover_agent, mock_isfile, mock_exists):
         """
         Test the behavior when the test file is not found.
@@ -205,7 +205,7 @@ class TestCoverAgent:
         # Assert that the correct error message is raised
         assert str(exc_info.value) == f"Test file not found at {args.test_file_path}"
 
-    @patch("cover_agent.CoverAgent.os.path.isfile", return_value=True)
+    @patch("cover_agent.cover_agent.os.path.isfile", return_value=True)
     def test_duplicate_test_file_without_output_path(self, mock_isfile):
         """
         Test the behavior when no output path is provided for the test file.
@@ -219,12 +219,8 @@ class TestCoverAgent:
             mock_isfile (MagicMock): Mock for `os.path.isfile` to simulate
             the existence of files.
         """
-        with tempfile.NamedTemporaryFile(
-            suffix=".py", delete=False
-        ) as temp_source_file:
-            with tempfile.NamedTemporaryFile(
-                suffix=".py", delete=False
-            ) as temp_test_file:
+        with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_source_file:
+            with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_test_file:
                 args = argparse.Namespace(
                     source_file_path=temp_source_file.name,
                     test_file_path=temp_test_file.name,
@@ -266,13 +262,17 @@ class TestCoverAgent:
         os.remove(temp_source_file.name)
         os.remove(temp_test_file.name)
 
-    @patch("cover_agent.CoverAgent.os.environ", {})
-    @patch("cover_agent.CoverAgent.sys.exit")
-    @patch("cover_agent.CoverAgent.UnitTestGenerator")
-    @patch("cover_agent.CoverAgent.UnitTestValidator")
-    @patch("cover_agent.CoverAgent.UnitTestDB")
+    @patch("cover_agent.cover_agent.os.environ", {})
+    @patch("cover_agent.cover_agent.sys.exit")
+    @patch("cover_agent.cover_agent.UnitTestGenerator")
+    @patch("cover_agent.cover_agent.UnitTestValidator")
+    @patch("cover_agent.cover_agent.UnitTestDB")
     def test_run_max_iterations_strict_coverage(
-        self, mock_test_db, mock_unit_test_validator, mock_unit_test_generator, mock_sys_exit,
+        self,
+        mock_test_db,
+        mock_unit_test_validator,
+        mock_unit_test_generator,
+        mock_sys_exit,
     ):
         """
         Test the behavior of the CoverAgent when strict coverage is enabled and the maximum number of iterations is reached.
@@ -288,13 +288,11 @@ class TestCoverAgent:
             mock_unit_test_generator (MagicMock): Mock for the `UnitTestGenerator` class to simulate test generation.
             mock_sys_exit (MagicMock): Mock for the `sys.exit` function to verify the exit behavior.
         """
-        with tempfile.NamedTemporaryFile(
-            suffix=".py", delete=False
-        ) as temp_source_file, tempfile.NamedTemporaryFile(
-            suffix=".py", delete=False
-        ) as temp_test_file, tempfile.NamedTemporaryFile(
-            suffix=".py", delete=False
-        ) as temp_output_file:
+        with (
+            tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_source_file,
+            tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_test_file,
+            tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_output_file,
+        ):
             args = argparse.Namespace(
                 source_file_path=temp_source_file.name,
                 test_file_path=temp_test_file.name,
@@ -338,8 +336,8 @@ class TestCoverAgent:
             mock_sys_exit.assert_called_once_with(2)
             mock_test_db.return_value.dump_to_report.assert_called_once_with(args.report_filepath)
 
-    @patch("cover_agent.CoverAgent.os.path.isfile", return_value=True)
-    @patch("cover_agent.CoverAgent.os.path.isdir", return_value=False)
+    @patch("cover_agent.cover_agent.os.path.isfile", return_value=True)
+    @patch("cover_agent.cover_agent.os.path.isdir", return_value=False)
     def test_project_root_not_found(self, mock_isdir, mock_isfile):
         """
         Test the behavior when the project root directory is not found.
@@ -376,10 +374,10 @@ class TestCoverAgent:
         # Assert that the correct error message is raised
         assert str(exc_info.value) == f"Project root not found at {args.project_root}"
 
-    @patch("cover_agent.CoverAgent.UnitTestValidator")
-    @patch("cover_agent.CoverAgent.UnitTestGenerator")
-    @patch("cover_agent.CoverAgent.UnitTestDB")
-    @patch("cover_agent.CoverAgent.CustomLogger")
+    @patch("cover_agent.cover_agent.UnitTestValidator")
+    @patch("cover_agent.cover_agent.UnitTestGenerator")
+    @patch("cover_agent.cover_agent.UnitTestDB")
+    @patch("cover_agent.cover_agent.CustomLogger")
     def test_run_diff_coverage(self, mock_logger, mock_test_db, mock_test_gen, mock_test_validator):
         """
         Test the behavior of the CoverAgent when diff coverage is enabled.
@@ -396,13 +394,11 @@ class TestCoverAgent:
             mock_test_gen (MagicMock): Mock for the `UnitTestGenerator` class to simulate test generation.
             mock_test_validator (MagicMock): Mock for the `UnitTestValidator` class to simulate coverage validation.
         """
-        with tempfile.NamedTemporaryFile(
-            suffix=".py", delete=False
-        ) as temp_source_file, tempfile.NamedTemporaryFile(
-            suffix=".py", delete=False
-        ) as temp_test_file, tempfile.NamedTemporaryFile(
-            suffix=".py", delete=False
-        ) as temp_output_file:
+        with (
+            tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_source_file,
+            tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_test_file,
+            tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_output_file,
+        ):
 
             args = argparse.Namespace(
                 source_file_path=temp_source_file.name,
@@ -447,9 +443,9 @@ class TestCoverAgent:
         os.remove(temp_test_file.name)
         os.remove(temp_output_file.name)
 
-    @patch("cover_agent.CoverAgent.os.path.isfile", return_value=True)
-    @patch("cover_agent.CoverAgent.os.path.isdir", return_value=True)
-    @patch("cover_agent.CoverAgent.shutil.copy")
+    @patch("cover_agent.cover_agent.os.path.isfile", return_value=True)
+    @patch("cover_agent.cover_agent.os.path.isdir", return_value=True)
+    @patch("cover_agent.cover_agent.shutil.copy")
     @patch("builtins.open", new_callable=mock_open, read_data="# Test content")
     def test_run_each_test_separately_with_pytest(self, mock_open_file, mock_copy, mock_isdir, mock_isfile):
         """
@@ -466,13 +462,11 @@ class TestCoverAgent:
             mock_isdir (MagicMock): Mock for `os.path.isdir` to simulate directory existence.
             mock_isfile (MagicMock): Mock for `os.path.isfile` to simulate file existence.
         """
-        with tempfile.NamedTemporaryFile(
-            suffix=".py", delete=False
-        ) as temp_source_file, tempfile.NamedTemporaryFile(
-            suffix=".py", delete=False
-        ) as temp_test_file, tempfile.NamedTemporaryFile(
-            suffix=".py", delete=False
-        ) as temp_output_file:
+        with (
+            tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_source_file,
+            tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_test_file,
+            tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_output_file,
+        ):
             # Create a relative path for the test file
             rel_path = "tests/test_output.py"
 

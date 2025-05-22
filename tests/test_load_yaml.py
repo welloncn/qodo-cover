@@ -7,8 +7,8 @@ import yaml
 
 from yaml.scanner import ScannerError
 
-from cover_agent.utils import load_yaml, parse_args_full_repo
 from cover_agent.settings.config_loader import get_settings
+from cover_agent.utils import load_yaml, parse_args_full_repo
 
 
 class TestLoadYaml:
@@ -241,8 +241,9 @@ test_name:"""
         """
         Tests that find_test_files correctly identifies test files in the project directory.
         """
-        from cover_agent.utils import find_test_files
         import argparse
+
+        from cover_agent.utils import find_test_files
 
         mock_os_walk = [
             ("/path/to/project", ("dir1", "dir2"), ("test_file1.py", "file2.py")),
@@ -285,8 +286,9 @@ test_name:"""
         """
         Tests that find_test_files correctly excludes forbidden directories.
         """
-        from cover_agent.utils import find_test_files
         import argparse
+
+        from cover_agent.utils import find_test_files
 
         mock_os_walk = [
             ("/path/to/project", ("test", "node_modules"), ("test_file1.py",)),
@@ -298,9 +300,7 @@ test_name:"""
             return "node_modules" in path
 
         mocker.patch("os.walk", return_value=mock_os_walk)
-        mocker.patch(
-            "cover_agent.utils.is_forbidden_directory", side_effect=mock_is_forbidden
-        )
+        mocker.patch("cover_agent.utils.is_forbidden_directory", side_effect=mock_is_forbidden)
         mocker.patch("cover_agent.utils.filename_to_lang", return_value="python")
         mocker.patch("os.path.getmtime", return_value=1000)
 

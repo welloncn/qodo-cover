@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import patch
-from cover_agent.Runner import Runner
+
+from cover_agent.runner import Runner
 
 
 class TestRunner:
@@ -15,9 +15,7 @@ class TestRunner:
     def test_run_command_with_cwd(self):
         """Test the run_command method with a specified working directory."""
         command = 'echo "Working Directory"'
-        stdout, stderr, exit_code, _ = Runner.run_command(
-            command, cwd="/tmp", max_run_time_sec=10
-        )
+        stdout, stderr, exit_code, _ = Runner.run_command(command, cwd="/tmp", max_run_time_sec=10)
         assert stdout.strip() == "Working Directory"
         assert stderr == ""
         assert exit_code == 0
