@@ -101,22 +101,7 @@ class CoverAgent:
                 f"Converting test command: `{test_command}`\n to run only a single test: `{new_command_line}`"
             )
 
-        # Initialize test generator with configuration
-        self.test_gen = UnitTestGenerator(
-            source_file_path=self.config.source_file_path,
-            test_file_path=self.config.test_file_output_path,
-            project_root=self.config.project_root,
-            code_coverage_report_path=self.config.code_coverage_report_path,
-            test_command=self.config.test_command,
-            test_command_dir=self.config.test_command_dir,
-            included_files=self.config.included_files,
-            coverage_type=self.config.coverage_type,
-            additional_instructions=self.config.additional_instructions,
-            llm_model=self.config.model,
-            use_report_coverage_feature_flag=self.config.use_report_coverage_feature_flag,
-            agent_completion=self.agent_completion,
-            generate_log_files=self.generate_log_files,
-        )
+        
 
         # Initialize test validator with configuration
         self.test_validator = UnitTestValidator(
@@ -137,6 +122,23 @@ class CoverAgent:
             num_attempts=self.config.run_tests_multiple_times,
             agent_completion=self.agent_completion,
             max_run_time_sec=self.config.max_run_time_sec,
+            generate_log_files=self.generate_log_files,
+        )
+        use_context = os.getenv('USE_CONTEXT', "false")
+        # Initialize test generator with configuration
+        self.test_gen = UnitTestGenerator(
+            source_file_path=self.config.source_file_path,
+            test_file_path=self.config.test_file_output_path,
+            project_root=self.config.project_root,
+            code_coverage_report_path=self.config.code_coverage_report_path,
+            test_command=self.config.test_command,
+            test_command_dir=self.config.test_command_dir,
+            included_files=self.test_validator.included_files if use_context == 'true' else self.config.included_files,
+            coverage_type=self.config.coverage_type,
+            additional_instructions=self.config.additional_instructions,
+            llm_model=self.config.model,
+            use_report_coverage_feature_flag=self.config.use_report_coverage_feature_flag,
+            agent_completion=self.agent_completion,
             generate_log_files=self.generate_log_files,
         )
 
